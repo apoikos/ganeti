@@ -92,6 +92,9 @@ class LogicalVolume(base.BlockDev):
     self._ValidateName(self._vg_name)
     self._ValidateName(self._lv_name)
     self.dev_path = utils.PathJoin("/dev", self._vg_name, self._lv_name)
+    if not os.path.exists(self.dev_path):
+      # Fall back to searching by LV name across VGs
+      self._FindLvPathByName()
     self._degraded = True
     self.major = self.minor = self.pe_size = self.stripe_count = None
     self.pv_names = None
@@ -482,6 +485,49 @@ class LogicalVolume(base.BlockDev):
         pv_names.append(m.group(1))
 
     return (status, major, minor, pe_size, stripes, pv_names)
+
+  def _FindLvPathByName(self):
+    """Find a logical volume by name across VGs
+
+    """
+    sep = "|"
+    name = self._lv_name
+    result = utils.RunCmd(
+        ["lvs", "--noheadings", "--separator=%s" % sep,
+         "--nosuffix", "-oname,vg_name,lv_path",
+         "--select", "name = %s" % name])
+    if result.failed:
+      logging.warning("Calling lvs to match LV %s failed: %s %s",
+          name, result.fail_reason, result.output)
+      return
+
+    out = result.stdout.splitlines()
+    if not out:
+      logging.warning("No LVs matching %s found", name)
+      return
+
+    vg_names = set()
+    lv_path = None
+    vg_name = None
+
+    for line in out:
+      (lv_name, vg_name, lv_path) = line.strip().split(sep, 2)
+      if lv_name != name:
+        logging.warning("LVS returned LV %s != %s", lv_name, name)
+        continue
+      vg_names.add(vg_name)
+
+    if len(vg_names) > 1:
+      logging.warning("LV %s found in VGs %s", name, ", ".join(vg_names))
+      return
+
+    if lv_path is None:
+      return
+
+    old_path = self.dev_path
+    self.dev_path = lv_path
+    self._vg_name = vg_name
+    logging.warning("Replacing LV device %s with %s", old_path, self.dev_path)
 
   @classmethod
   def _GetLvInfo(cls, dev_path, _run_cmd=utils.RunCmd):
