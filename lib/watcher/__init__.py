@@ -352,11 +352,13 @@ def _VerifyDisks(cl, uuid, nodes, instances):
     group_name=uuid, priority=constants.OP_PRIO_LOW)
   op.reason = [(constants.OPCODE_REASON_SRC_WATCHER,
                 "Verifying disks of group %s" % uuid,
+                utils.EpochNano()),
+               (constants.OPCODE_REASON_SRC_WATCHER,
+                constants.OPCODE_REASON_WATCHER_BULK,
                 utils.EpochNano())]
   job_id = cl.SubmitJob([op])
   ((_, offline_disk_instances, _), ) = \
     cli.PollJob(job_id, cl=cl, feedback_fn=logging.debug)
-  cl.ArchiveJob(job_id)
 
   if not offline_disk_instances:
     # nothing to do
@@ -662,6 +664,34 @@ def _StartGroupChildren(cl, wait):
       logging.debug("Child PID %s exited with status %s", pid, result)
 
 
+def _ArchiveWatcherBulkJobs(cl):
+  """Archives watcher bulk jobs
+
+  """
+  archived = 0
+  results = cl.Query(constants.QR_JOB, ["id", "ops", "status"], None)
+
+  def _IsBulk(opcode):
+    for source, reason, _ in opcode.get('reason', []):
+      if source == constants.OPCODE_REASON_SRC_WATCHER and \
+         reason == constants.OPCODE_REASON_WATCHER_BULK:
+        return True
+    return False
+
+  for job_data in results.data:
+    jid, opcodes, status = [v[1] for v in job_data]
+    if status != constants.JOB_STATUS_SUCCESS:
+      # Leave unsuccessful jobs unarchived
+      continue
+
+    if any(_IsBulk(opcode) for opcode in opcodes):
+      cl.ArchiveJob(jid)
+      archived += 1
+      continue
+
+  logging.debug("Archived %s bulk watcher jobs", archived)
+
+
 def _ArchiveJobs(cl, age):
   """Archives old jobs.
 
@@ -728,6 +758,7 @@ def _GlobalWatcher(opts):
 
   _CheckMaster(client)
   _ArchiveJobs(client, opts.job_age)
+  _ArchiveWatcherBulkJobs(client)
 
   # Spawn child processes for all node groups
   _StartGroupChildren(client, opts.wait_children)

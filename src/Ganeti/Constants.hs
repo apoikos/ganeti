@@ -4758,6 +4758,10 @@ opcodeReasonSources =
                        opcodeReasonSrcRlib2,
                        opcodeReasonSrcUser]
 
+-- * Well-known reason strings
+opcodeReasonWatcherBulk :: String
+opcodeReasonWatcherBulk = "watcher:bulk"
+
 -- | Path generating random UUID
 randomUuidFile :: String
 randomUuidFile = ConstantUtils.randomUuidFile
