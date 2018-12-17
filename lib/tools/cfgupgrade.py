@@ -113,7 +113,7 @@ def OrFail(description=None):
       safety = copy.deepcopy(self.config_data)
       try:
         f(self)
-      except BaseException, e:
+      except BaseException as e:
         msg = "%s failed:\n%s" % (description or f.func_name, e)
         logging.exception(msg)
         self.config_data = safety
