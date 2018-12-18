@@ -815,9 +815,6 @@ HFLAGS = \
 	-hide-all-packages \
 	`cat $(HASKELL_PACKAGE_IDS_FILE)` \
 	$(GHC_BYVERSION_FLAGS)
-if DEVELOPER_MODE
-HFLAGS += -Werror
-endif
 
 HTEST_SUFFIX = hpc
 HPROF_SUFFIX = prof
