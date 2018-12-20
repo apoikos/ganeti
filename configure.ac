@@ -515,6 +515,23 @@ then
   AC_MSG_WARN([pandoc not found, man pages rebuild will not be possible])
 fi
 
+# Check for Python
+# We need a Python-2 interpreter, version at least 2.6. As AM_PATH_PYTHON
+# only supports a "minimal version" constraint, we check <3.0 afterwards.
+# We  tune _AM_PYTHON_INTERPRETER_LIST to first check interpreters that are
+# likely interpreters for Python 2.
+m4_define_default([_AM_PYTHON_INTERPRETER_LIST],
+                  [python2 python2.7 python2.6 python])
+AM_PATH_PYTHON(2.6)
+if $PYTHON -c "import sys
+if (sys.hexversion >> 24) < 3:
+  sys.exit(1)
+else:
+  sys.exit(0)
+"; then
+  AC_MSG_FAILURE([Can only work with an interpreter for Python 2])
+fi
+
 # Check for python-sphinx
 AC_ARG_VAR(SPHINX, [sphinx-build path])
 AC_PATH_PROG(SPHINX, [sphinx-build], [])
@@ -523,23 +540,16 @@ then
   AC_MSG_WARN(m4_normalize([sphinx-build not found, documentation rebuild will
                             not be possible]))
 else
-  # Sphinx exits with code 1 when it prints its usage
-  sphinxver=`{ $SPHINX --version 2>&1 || :; } | head -n 3`
-
-  if ! echo "$sphinxver" | grep -q -i -w -e '^Sphinx' -e '^Usage:'; then
-    AC_MSG_ERROR([Unable to determine Sphinx version])
-
-  # Note: Character classes ([...]) need to be double quoted due to autoconf
-  # using m4
-  elif ! echo "$sphinxver" | grep -q -E \
-       '^(Sphinx)?([[[:space:]]]+|\(?sphinx-build[[1-9]]?\)?|v)*[[1-9]]\>'; then
-    AC_MSG_ERROR([Sphinx 1.0 or higher is required])
+  if ! "$PYTHON" -c "import sphinx; print(sphinx.version_info)"; then
+    AC_MSG_ERROR([Unable to determine Sphinx version. \
+                  Make sure Sphinx 1.2 or higher is installed])
   fi
 fi
 AM_CONDITIONAL([HAS_SPHINX], [test -n "$SPHINX"])
 AM_CONDITIONAL([HAS_SPHINX_PRE13],
- [test -n "$SPHINX" && echo "$sphinxver" | grep -q -E \
-  '^Sphinx([[[:space:]]]+|\(sphinx-build[[1-9]]?\)|v)*[[1-9]]\.[[0-2]]\.'])
+ [test -n "$SPHINX" && \
+  "$PYTHON" -c "import sphinx; print(sphinx.version_info < (1,3))" \
+    | grep -q -xF 'True'])
 
 AC_ARG_ENABLE([manpages-in-doc],
   [AS_HELP_STRING([--enable-manpages-in-doc],
@@ -863,23 +873,6 @@ else
 fi
 
 AC_SUBST(MAN_HAS_WARNINGS)
-
-# Check for Python
-# We need a Python-2 interpreter, version at least 2.6. As AM_PATH_PYTHON
-# only supports a "minimal version" constraint, we check <3.0 afterwards.
-# We  tune _AM_PYTHON_INTERPRETER_LIST to first check interpreters that are
-# likely interpreters for Python 2.
-m4_define_default([_AM_PYTHON_INTERPRETER_LIST],
-                  [python2 python2.7 python2.6 python])
-AM_PATH_PYTHON(2.6)
-if $PYTHON -c "import sys
-if (sys.hexversion >> 24) < 3:
-  sys.exit(1)
-else:
-  sys.exit(0)
-"; then
-  AC_MSG_FAILURE([Can only work with an interpreter for Python 2])
-fi
 
 AC_PYTHON_MODULE(OpenSSL, t)
 AC_PYTHON_MODULE(simplejson, t)
