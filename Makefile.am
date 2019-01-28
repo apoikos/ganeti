@@ -1140,6 +1140,7 @@ HS_TEST_SRCS = \
 HS_LIBTEST_SRCS = $(HS_LIB_SRCS) $(HS_TEST_SRCS)
 
 HS_BUILT_SRCS = \
+	autotools/HeaderConstants.hs \
 	test/hs/Test/Ganeti/TestImports.hs \
 	src/AutoConf.hs \
 	src/Ganeti/Hs2Py/ListConstants.hs \
@@ -2320,6 +2321,9 @@ src/Ganeti/Hs2Py/ListConstants.hs: src/Ganeti/Hs2Py/ListConstants.hs.in \
 src/Ganeti/Curl/Internal.hs: src/Ganeti/Curl/Internal.hsc | stamp-directories
 	hsc2hs -o $@ $<
 
+autotools/HeaderConstants.hs: autotools/HeaderConstants.hsc | stamp-directories
+	hsc2hs -o $@ $<
+
 test/hs/Test/Ganeti/TestImports.hs: test/hs/Test/Ganeti/TestImports.hs.in \
 	$(built_base_sources)
 	set -e; \
@@ -2336,7 +2340,7 @@ lib/_constants.py: Makefile src/hs2py lib/_constants.py.in | stamp-directories
 
 lib/constants.py: lib/_constants.py
 
-src/AutoConf.hs: Makefile src/AutoConf.hs.in $(PRINT_PY_CONSTANTS) \
+src/AutoConf.hs: Makefile src/AutoConf.hs.in autotools/HeaderConstants.hs $(PRINT_PY_CONSTANTS) \
 	       | $(built_base_sources)
 	@echo "m4 ... >" $@
 	@m4 -DPACKAGE_VERSION="$(PACKAGE_VERSION)" \
@@ -2413,7 +2417,7 @@ src/AutoConf.hs: Makefile src/AutoConf.hs.in $(PRINT_PY_CONSTANTS) \
 	                    done)" \
 	    -DAF_INET4="$$(PYTHONPATH=. $(PYTHON) $(PRINT_PY_CONSTANTS) AF_INET4)" \
 	    -DAF_INET6="$$(PYTHONPATH=. $(PYTHON) $(PRINT_PY_CONSTANTS) AF_INET6)" \
-	$(abs_top_srcdir)/src/AutoConf.hs.in > $@
+	$(abs_top_srcdir)/src/AutoConf.hs.in $(abs_top_srcdir)/autotools/HeaderConstants.hs > $@
 
 lib/_vcsversion.py: Makefile vcs-version | stamp-directories
 	set -e; \

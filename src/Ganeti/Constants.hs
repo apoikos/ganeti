@@ -5528,3 +5528,20 @@ cliWfjcFrequency = 20
 -- | Default 'WaitForJobChange' timeout in seconds
 defaultWfjcTimeout :: Int
 defaultWfjcTimeout = 60
+
+-- | Arch-dependent mlock(2) flags
+mclCurrent :: Int
+mclCurrent = AutoConf.mclCurrent
+
+mclFuture :: Int
+mclFuture = AutoConf.mclFuture
+
+-- | Arch-dependent TUN ioctl(2) values
+tunsetiff :: Integer
+tunsetiff = AutoConf.tunsetiff
+
+tungetiff :: Integer
+tungetiff = AutoConf.tungetiff
+
+tungetfeatures :: Integer
+tungetfeatures = AutoConf.tungetfeatures
