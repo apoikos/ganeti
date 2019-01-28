@@ -34,6 +34,7 @@
 import os
 import logging
 
+from ganeti import constants
 from ganeti import errors
 
 try:
@@ -41,11 +42,6 @@ try:
   import ctypes
 except ImportError:
   ctypes = None
-
-
-# Flags for mlockall(2) (from bits/mman.h)
-_MCL_CURRENT = 1
-_MCL_FUTURE = 2
 
 
 def Mlockall(_ctypes=ctypes):
@@ -77,7 +73,7 @@ def Mlockall(_ctypes=ctypes):
   # pylint: disable=W0212
   libc.__errno_location.restype = _ctypes.POINTER(_ctypes.c_int)
 
-  if libc.mlockall(_MCL_CURRENT | _MCL_FUTURE):
+  if libc.mlockall(constants.MCL_CURRENT | constants.MCL_FUTURE):
     # pylint: disable=W0212
     logging.error("Cannot set memory lock: %s",
                   os.strerror(libc.__errno_location().contents.value))
