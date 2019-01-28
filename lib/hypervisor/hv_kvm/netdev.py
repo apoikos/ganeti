@@ -37,15 +37,13 @@ import logging
 import struct
 import fcntl
 
+from ganeti import constants
 from ganeti import errors
 
 
 # TUN/TAP driver constants, taken from <linux/if_tun.h>
 # They are architecture-independent and already hardcoded in qemu-kvm source,
 # so we can safely include them here.
-TUNSETIFF = 0x400454ca
-TUNGETIFF = 0x800454d2
-TUNGETFEATURES = 0x800454cf
 IFF_TAP = 0x0002
 IFF_NO_PI = 0x1000
 IFF_ONE_QUEUE = 0x2000
@@ -61,7 +59,7 @@ def _GetTunFeatures(fd, _ioctl=fcntl.ioctl):
   """
   req = struct.pack("I", 0)
   try:
-    buf = _ioctl(fd, TUNGETFEATURES, req)
+    buf = _ioctl(fd, constants.TUNGETFEATURES, req)
   except EnvironmentError as err:
     logging.warning("ioctl(TUNGETFEATURES) failed: %s", err)
     return None
@@ -171,7 +169,7 @@ def OpenTap(name="", features=None):
     ifr = struct.pack("16sh", name, flags)
 
     try:
-      res = fcntl.ioctl(tapfd, TUNSETIFF, ifr)
+      res = fcntl.ioctl(tapfd, constants.TUNSETIFF, ifr)
     except EnvironmentError as err:
       raise errors.HypervisorError("Failed to allocate a new TAP device: %s" %
                                    err)
