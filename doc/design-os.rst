@@ -332,7 +332,7 @@ Therefore, it will be necessary to extend the routing table with rules specific
 to each guest.  This can be achieved with the following command, which takes the
 guest's unique IP address and its TAP interface::
 
-  route add -host <ip> dev <ifname>
+  ip route add <ip>/32 dev <ifname>
 
 This rule has the additional advantage of preventing guests from trying to lease
 IP addresses from the DHCP server other than the own that has been assigned to
