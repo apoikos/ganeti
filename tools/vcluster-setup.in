@@ -206,7 +206,7 @@ setup_node() {
 
   local -r daemon_args="-b $(node_ipaddr $number)"
 
-  cat > $nodedir/etc/default/ganeti <<EOF
+  cat > $nodedir/@SYSCONFDIR@/default/ganeti <<EOF
 # Default settings for virtual node $i
 NODED_ARGS='--no-mlock $daemon_args'
 MASTERD_ARGS=''
