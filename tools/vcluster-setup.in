@@ -255,7 +255,8 @@ setup_etc_hosts() {
       done
     } > $tmpfile && \
     chmod 0644 $tmpfile && \
-    mv $tmpfile $etc_hosts_filename && \
+    cat $tmpfile > $etc_hosts_filename && \
+    rm $tmpfile && \
     trap - EXIT
   )
 }
