@@ -1,0 +1,34 @@
+---
+name: vcluster QA
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: autogen
+        uses: docker://ganeti/ci:buster-py3
+        with:
+          args: ./autogen.sh
+
+      - name: configure
+        uses: docker://ganeti/ci:buster-py3
+        with:
+          args: ./configure --prefix=/opt/ganeti --enable-symlinks
+
+      - name: Build
+        uses: docker://ganeti/ci:buster-py3
+        with:
+          args: make -j 2
+
+      - name: Install
+        uses: docker://ganeti/ci:buster-py3
+        with:
+          args: make install
+
+      - name: vcluster QA
+        uses: docker://ganeti/ci:buster-py3
+        with:
+          args: .github/workflows/vcluster-qa
