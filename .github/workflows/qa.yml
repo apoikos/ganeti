@@ -23,12 +23,7 @@ jobs:
         with:
           args: make -j 2
 
-      - name: Install
+      - name: Install & run QA
         uses: docker://ganeti/ci:buster-py3
         with:
-          args: make install
-
-      - name: vcluster QA
-        uses: docker://ganeti/ci:buster-py3
-        with:
-          args: .github/workflows/vcluster-qa
+          args: sh -c "make install && .github/workflows/vcluster-qa"
