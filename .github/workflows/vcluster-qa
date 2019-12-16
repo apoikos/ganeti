@@ -8,21 +8,13 @@ set -e
 apt-get update
 apt-get -y install openssh-server
 
-# Create two network interfaces: the master netdev (gnt) and the bridge
-# (gnt-br0)
-
-ip link add gnt type dummy && ip link set gnt up
-ip link add gnt-br0 type bridge && ip link set gnt-br0 up
-
 # Generate an SSH keypair for root and set up SSH access
 ssh-keygen -t rsa -b 2048 -f /root/.ssh/id_rsa -N ''
 cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 ssh-keyscan localhost >> /root/.ssh/known_hosts
 
-/etc/init.d/ssh restart
-
 vcluster_dir="/tmp/ganeti-vcluster"
-srcdir="${GITHUB_WORKSPACE}/${GITHUB_REPOSITORY}"
+srcdir="${GITHUB_WORKSPACE}"
 
 if [ -n "$AUTOPKGTEST_ARTIFACTS" ]; then
 	mkdir "${AUTOPKGTEST_ARTIFACTS}/ganeti-vcluster"
@@ -31,15 +23,28 @@ else
 	mkdir -p "$vcluster_dir"
 fi
 
-# Setup the vcluster
-
-/opt/ganeti/lib/ganeti/tools/vcluster-setup -c 5 -i 5 -n gnt "$vcluster_dir"
 
 # Setup the python library path to point to the installed Ganeti instance
 export PYTHONPATH="${srcdir}:/opt/ganeti/share/ganeti/default"
 
-# Run the QA suite
 cd $srcdir
-./qa/ganeti-qa.py --yes-do-it .github/workflows/vcluster-qa.json
 
-trap 'killall sshd' EXIT
+# Create a new user namespace and a network namespace attached to it, so that
+# we can have CAP_NET_ADMIN and create the network interfaces we need.
+unshare --user --net sh - <<-EOF
+  # Attach SSH to this network namespace
+  /etc/init.d/ssh restart
+
+  # Create two network interfaces: the master netdev (gnt) and the bridge
+  # (gnt-br0)
+  ip link add gnt type dummy && ip link set gnt up
+  ip link add gnt-br0 type bridge && ip link set gnt-br0 up
+
+  # Setup the vcluster
+  /opt/ganeti/lib/ganeti/tools/vcluster-setup -c 5 -i 5 -n gnt "$vcluster_dir"
+  
+  # Run the QA suite
+  ./qa/ganeti-qa.py --yes-do-it .github/workflows/vcluster-qa.json
+  
+  trap 'killall sshd' EXIT
+EOF
